@@ -1,0 +1,40 @@
+name: Vivid Player 折扣提醒
+
+on:
+  schedule:
+    # GitHub cron uses UTC: 00:00/12:00 UTC = 08:00/20:00 Asia/Shanghai.
+    - cron: '0 0,12 * * *'
+  workflow_dispatch:
+    inputs:
+      test_notification:
+        description: '发送一条明确标注的 GitHub Issue 测试通知'
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: vivid-player-price-watch
+  cancel-in-progress: false
+
+jobs:
+  check-price:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Run offline tests
+        run: python -m unittest discover -s tests -v
+      - name: Check price and notify only on a new deal
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEST_NOTIFICATION: ${{ inputs.test_notification && '1' || '0' }}
+        run: python monitor.py

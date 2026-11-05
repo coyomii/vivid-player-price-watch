@@ -1,0 +1,20 @@
+[project]
+name = "vivid-player-price-watch"
+version = "1.0.0"
+description = "Microsoft Store Vivid Player discount notifications through GitHub Issues"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+source = ["monitor"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
