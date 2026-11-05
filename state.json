@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "watch_key": "9PF8WT09D2NT:0010:CN:CNY",
+  "last_quote": {
+    "product_id": "9PF8WT09D2NT",
+    "title": "Vivid Player - HDR视频播放器",
+    "market": "CN",
+    "currency": "CNY",
+    "price": "25.0",
+    "regular": "25.0",
+    "checked_at": "2026-11-05T02:24:36.676030+00:00",
+    "availability_id": "9RCL200WZCCP",
+    "expires_at": "2026-11-18T00:00:00+00:00"
+  },
+  "sale_active": false,
+  "last_alert_price": null,
+  "event_number": 0,
+  "history": [
+    {
+      "checked_at": "2026-11-05T02:24:36.676030+00:00",
+      "price": "25.0",
+      "regular": "25.0"
+    }
+  ]
+}
