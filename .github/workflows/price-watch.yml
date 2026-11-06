@@ -2,8 +2,9 @@ name: Vivid Player 折扣提醒
 
 on:
   schedule:
-    # GitHub cron uses UTC: 00:00/12:00 UTC = 08:00/20:00 Asia/Shanghai.
-    - cron: '0 0,12 * * *'
+    # Interpret these hours directly in Beijing time.
+    - cron: '0 8,20 * * *'
+      timezone: 'Asia/Shanghai'
   workflow_dispatch:
     inputs:
       test_notification:
