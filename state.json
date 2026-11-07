@@ -8,8 +8,8 @@
     "currency": "CNY",
     "price": "25.0",
     "regular": "25.0",
-    "checked_at": "2026-11-06T18:42:30.477359+00:00",
-    "availability_id": "9RCL200WZCCP",
+    "checked_at": "2026-11-07T03:51:44.293348+00:00",
+    "availability_id": "B1VP8CM0QDM9",
     "expires_at": "2026-11-18T00:00:00+00:00"
   },
   "sale_active": false,
@@ -43,6 +43,11 @@
     },
     {
       "checked_at": "2026-11-06T18:42:30.477359+00:00",
+      "price": "25.0",
+      "regular": "25.0"
+    },
+    {
+      "checked_at": "2026-11-07T03:51:44.293348+00:00",
       "price": "25.0",
       "regular": "25.0"
     }
