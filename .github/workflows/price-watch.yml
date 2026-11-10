@@ -2,12 +2,12 @@ name: Vivid Player 折扣提醒
 
 on:
   schedule:
-    # Experimental compensation for observed scheduler delays (2026-11-09).
+    # Experimental compensation for observed scheduler delays (2026-11-10).
     # Target checks: 08:00 / 20:00 Beijing; actual timing is not guaranteed.
-    # Advance by the observed per-slot median: 223 / 325 minutes.
+    # Morning: 223 minutes early; evening: 325 + 180 minutes early.
     - cron: '17 4 * * *'
       timezone: 'Asia/Shanghai'
-    - cron: '35 14 * * *'
+    - cron: '35 11 * * *'
       timezone: 'Asia/Shanghai'
   workflow_dispatch:
     inputs:
