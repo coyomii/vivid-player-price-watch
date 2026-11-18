@@ -8,12 +8,12 @@
     "currency": "CNY",
     "price": "20.0",
     "regular": "25.0",
-    "checked_at": "2026-11-18T02:26:40.626995+00:00",
+    "checked_at": "2026-11-18T07:11:00.983847+00:00",
     "availability_id": "9NN5BWT8D2X5",
     "expires_at": "2026-12-05T10:00:00+00:00"
   },
-  "sale_active": true,
-  "last_alert_price": "20.0",
+  "sale_active": false,
+  "last_alert_price": null,
   "event_number": 1,
   "history": [
     {
@@ -148,6 +148,11 @@
     },
     {
       "checked_at": "2026-11-18T02:26:40.626995+00:00",
+      "price": "20.0",
+      "regular": "25.0"
+    },
+    {
+      "checked_at": "2026-11-18T07:11:00.983847+00:00",
       "price": "20.0",
       "regular": "25.0"
     }
