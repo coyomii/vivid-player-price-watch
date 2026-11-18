@@ -3,9 +3,9 @@
 监控 [Vivid Player 中国区商店价格](https://apps.microsoft.com/detail/9pf8wt09d2nt?hl=zh-CN&gl=CN)，通过 GitHub Issue 提醒。
 
 - 目标为北京时间每天 **08:00、20:00** 检查两次。当前试用延迟补偿：在 `timezone: Asia/Shanghai` 下，将触发时间提前到 **04:17、11:35**（`17 4 * * *`、`35 11 * * *`）。这是根据历史记录估算的临时调整，不能保证实际检查准点；延迟缩短时也可能提前运行。
-- 初始基准价格 **CNY 25.00**。正式版现价低于商店标价或基准价时提醒；与上次检查相比直接降价也提醒。
-- 开始促销、同一促销再创新低、恢复原价后再次促销，均会提醒。同一价格不会每天重复提醒。
-- 价格无变化时只更新记录，不创建 Issue。接口连续三次连接失败、失去有效报价等情况创建一条异常 Issue；恢复后自动关闭。
+- **仅在正式版现价严格低于 CNY 20.00 时提醒；20.00 元及以上均不提醒**，即使价格从 25 元降至 22 元也保持安静。25 元基准价只用于展示参考优惠幅度。
+- 首次低于 20 元、同一低价期间再创新低、回到 20 元及以上后再次低于 20 元，均会提醒。同一价格不会每天重复提醒。
+- 不满足提醒条件时只更新记录，不创建 Issue。接口失败等异常只记录到 Actions 日志，不创建异常 Issue，也不评论旧异常 Issue。GitHub 平台自身的 Actions 失败邮件由账号通知设置控制。
 - 仅选取正式版 SKU `0010`、中国区、人民币、Windows 桌面端、处于有效期内的 `Purchase` 报价。不会把免费试用、其他地区或纯许可记录误判为限免。
 - 纯 Python 标准库；使用 GitHub CLI `gh` 操作仓库。GitHub 托管 Ubuntu runner 已带 `gh`，不需要邮箱、SMTP 密码或个人访问令牌。
 
@@ -20,7 +20,7 @@
 
 ## 通知怎么收到
 
-新折扣会创建一条 Issue，正文 `@提及` 并指派给 `notify_user`。可在 GitHub 站内通知或 GitHub 手机 App 查看。
+符合低于 20 元条件的新提醒会创建一条 Issue，正文 `@提及` 并指派给 `notify_user`。可在 GitHub 站内通知或 GitHub 手机 App 查看。
 
 若希望同时收邮件，在 [GitHub 通知设置](https://github.com/settings/notifications) 中为参与、提及及指派的通知启用 **Email**，并确认接收邮箱。GitHub 的邮件设置和过滤规则会影响送达；本工具不直接发邮件。
 
@@ -46,7 +46,7 @@ python monitor.py --repo YOUR_NAME/YOUR_REPO --test-notification
 
 ## 修改监控规则
 
-直接编辑 `config.json`。当前配置是 Vivid Player 正式版、中国区、人民币，基准价 25 元。`baseline_price` 不是购买目标价，而是用于识别下调后的价格；如商店永久调价，可自行修改基准。
+直接编辑 `config.json`。当前配置是 Vivid Player 正式版、中国区、人民币。`alert_below` 为严格小于的提醒阈值，当前为 `20.00`；`baseline_price` 为 25 元，仅用于提醒正文展示参考优惠幅度，不参与是否发送提醒的判断。
 
 修改 `product_id`、`sku_id`、`market` 或 `currency` 时，应使用新的 `state_branch`，以避免混用旧产品或旧币种的记录。若要监控其他商品，需确认其正式版 SKU 和当地币种。
 

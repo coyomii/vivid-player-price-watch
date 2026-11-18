@@ -183,6 +183,15 @@ class CatalogTests(unittest.TestCase):
 
 
 class DecisionTests(unittest.TestCase):
+    def test_configurable_threshold_uses_validated_decimal(self):
+        custom = Config.from_dict({**vars(config()), "alert_below": "18.50"})
+        self.assertEqual(custom.alert_below, Decimal("18.50"))
+        self.assertFalse(decide({}, quote("18.50"), custom)[1])
+        self.assertTrue(decide({}, quote("18.49"), custom)[1])
+        for invalid in (None, True, "NaN", "Infinity", "-1"):
+            with self.subTest(value=invalid), self.assertRaises(PriceError):
+                Config.from_dict({**vars(config()), "alert_below": invalid})
+
     def test_regular_first_check_and_unchanged_checks_stay_quiet(self):
         state, alert = decide({}, quote(), config())
         self.assertFalse(alert)
@@ -213,13 +222,39 @@ class DecisionTests(unittest.TestCase):
         self.assertFalse(alert)
         self.assertTrue(decide(state, quote("15", "25"), config())[1])
 
-    def test_price_below_baseline_counts_even_without_strikethrough(self):
-        self.assertTrue(decide({}, quote("20", "20"), config())[1])
+    def test_only_prices_strictly_below_twenty_notify(self):
+        for price in ("0", "19.99", "20", "20.01", "24", "25"):
+            with self.subTest(price=price):
+                self.assertEqual(
+                    decide({}, quote(price), config())[1], Decimal(price) < Decimal("20")
+                )
 
-    def test_normal_price_reduction_above_baseline_also_notifies(self):
+    def test_price_below_threshold_counts_without_strikethrough(self):
+        self.assertTrue(decide({}, quote("19", "19"), config())[1])
+
+    def test_return_to_threshold_then_new_low_price_notifies_again(self):
+        state, _ = decide({}, quote("19"), config())
+        state, alert = decide(state, quote("20"), config())
+        self.assertFalse(alert)
+        self.assertTrue(decide(state, quote("19"), config())[1])
+
+    def test_legacy_above_threshold_alert_does_not_block_eligible_price(self):
+        state, _ = decide({}, quote(), config())
+        state.update(sale_active=True, last_alert_price="22", event_number=1)
+        self.assertFalse(decide(state, quote("21"), config())[1])
+        self.assertTrue(decide(state, quote("19"), config())[1])
+
+    def test_legacy_sale_above_threshold_starts_a_new_low_price_period(self):
+        state, _ = decide({}, quote("22"), config())
+        state.update(sale_active=True, last_alert_price="15", event_number=2)
+        updated, alert = decide(state, quote("19"), config())
+        self.assertTrue(alert)
+        self.assertEqual(updated["event_number"], 3)
+
+    def test_price_reduction_above_threshold_stays_quiet(self):
         state, _ = decide({}, quote("35", "35"), config())
         state, alert = decide(state, quote("30", "30"), config())
-        self.assertTrue(alert)
+        self.assertFalse(alert)
         self.assertFalse(decide(state, quote("30", "30"), config())[1])
 
     def test_state_does_not_mutate_input_and_history_is_bounded(self):
@@ -431,12 +466,12 @@ class RunTests(unittest.TestCase):
             run_monitor(config(), backend, fetch=lambda _: quote("15", "25"))
         backend.save_state.assert_not_called()
 
-    def test_bad_source_raises_and_creates_one_error_issue(self):
+    def test_bad_source_raises_without_sending_notification(self):
         backend = self.backend()
         fetch = Mock(side_effect=PriceError("no full-version purchase price"))
         with self.assertRaises(PriceError):
             run_monitor(config(), backend, fetch=fetch)
-        self.assertIn("监控异常", backend.create_issue.call_args.args[0])
+        backend.create_issue.assert_not_called()
         backend.save_state.assert_not_called()
 
     def test_repeated_error_does_not_create_repeated_issue(self):
@@ -446,14 +481,22 @@ class RunTests(unittest.TestCase):
             run_monitor(config(), backend, fetch=Mock(side_effect=PriceError("offline")))
         backend.create_issue.assert_not_called()
 
-    def test_recovered_monitor_closes_previous_error_issue(self):
+    def test_recovery_above_threshold_does_not_comment_on_old_error_issue(self):
         backend = self.backend()
         backend.find_issue.side_effect = lambda marker, **kwargs: (
             {"number": 7} if "vivid-watch-error:" in marker else None
         )
         run_monitor(config(), backend, fetch=lambda _: quote())
-        backend.close_issue.assert_called_once()
-        self.assertEqual(backend.close_issue.call_args.args[0], 7)
+        backend.close_issue.assert_not_called()
+        backend.create_issue.assert_not_called()
+
+    def test_discount_at_or_above_threshold_creates_no_issue(self):
+        for price in ("20", "22", "25"):
+            with self.subTest(price=price):
+                backend = self.backend()
+                run_monitor(config(), backend, fetch=Mock(return_value=quote(price)))
+                backend.save_state.assert_called_once()
+                backend.create_issue.assert_not_called()
 
     def test_manual_notification_is_explicitly_marked_as_test(self):
         backend = self.backend()

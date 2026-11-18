@@ -52,10 +52,17 @@ class Config:
     baseline_price: Decimal
     notify_user: str
     state_branch: str
+    alert_below: Decimal = Decimal("20.00")
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Config:
-        config = cls(**{**data, "baseline_price": money(data["baseline_price"])})
+        config = cls(
+            **{
+                **data,
+                "baseline_price": money(data["baseline_price"]),
+                "alert_below": money(data.get("alert_below", "20.00")),
+            }
+        )
         patterns = {
             "product_id": r"[A-Z0-9]{12}",
             "sku_id": r"[A-Za-z0-9]{4}",
@@ -199,15 +206,20 @@ def fetch_quote(config: Config) -> Quote:
 
 
 def decide(state: dict[str, Any], quote: Quote, config: Config) -> tuple[dict[str, Any], bool]:
-    on_sale = quote.price < max(quote.regular, config.baseline_price)
+    on_sale = quote.price < config.alert_below
     previous = state.get("last_quote")
+    continuing_sale = bool(
+        state.get("sale_active")
+        and previous
+        and money(previous["price"]) < config.alert_below
+    )
     last_alert = state.get("last_alert_price")
     if on_sale:
         alert = (
-            not state.get("sale_active") or last_alert is None or quote.price < money(last_alert)
+            not continuing_sale or last_alert is None or quote.price < money(last_alert)
         )
     else:
-        alert = bool(previous and quote.price < money(previous["price"]))
+        alert = False
     history_entry = {
         "checked_at": quote.checked_at.isoformat(),
         "price": str(quote.price),
@@ -348,6 +360,7 @@ def quote_body(quote: Quote, config: Config) -> str:
         f"- 当前价格：**{quote.currency} {quote.price:.2f}**",
         f"- 商店标价：{quote.currency} {quote.regular:.2f}",
         f"- 监控基准：{quote.currency} {config.baseline_price:.2f}",
+        f"- 提醒条件：价格严格低于 {quote.currency} {config.alert_below:.2f}",
         f"- 检查时间：{china_time(quote.checked_at)}",
     ]
     reference = max(quote.regular, config.baseline_price)
@@ -404,18 +417,7 @@ def run_monitor(
     test_notification: bool = False,
 ) -> tuple[Quote, bool]:
     state, sha = github.load_state(config)
-    error_marker = f"<!-- vivid-watch-error:{config.key} -->"
-    try:
-        quote = fetch(config)
-    except PriceError as exc:
-        if not github.find_issue(error_marker, open_only=True):
-            github.create_issue(
-                "[监控异常] Vivid Player 价格暂时无法获取",
-                f"@{config.notify_user}\n\n{exc}\n\n价格未写为零，原状态已保留。"
-                "请查看 Actions 日志；相同异常在恢复前只提醒一次。\n\n" + error_marker,
-                config.notify_user,
-            )
-        raise
+    quote = fetch(config)
     state = recover_alerts(state, github, config)
     updated, alert = decide(state, quote, config)
     if alert:
@@ -443,11 +445,6 @@ def run_monitor(
             config.notify_user,
         )
     github.save_state(config, updated, sha)
-    error_issue = github.find_issue(error_marker, open_only=True)
-    if error_issue:
-        github.close_issue(
-            error_issue["number"], f"监控已恢复，当前报价 {quote.currency} {quote.price:.2f}。"
-        )
     return quote, alert
 
 
@@ -475,8 +472,9 @@ def main() -> int:
             f"## Vivid Player 价格检查\n\n"
             f"- 当前价格：**{quote.currency} {quote.price:.2f}**\n"
             f"- 商店标价：{quote.currency} {quote.regular:.2f}\n"
+            f"- 提醒条件：价格严格低于 {quote.currency} {config.alert_below:.2f}\n"
             f"- 检查时间：{china_time(quote.checked_at)}\n"
-            f"- 降价提醒：{'已处理（含去重）' if alert else '无新降价，保持安静'}\n"
+            f"- 降价提醒：{'已处理（含去重）' if alert else '未触发新的阈值提醒，保持安静'}\n"
             f"- 商店：[中国区页面]({config.store_url})\n"
         )
         print(summary)

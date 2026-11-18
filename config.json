@@ -5,6 +5,7 @@
   "language": "zh-CN",
   "currency": "CNY",
   "baseline_price": "25.00",
+  "alert_below": "20.00",
   "notify_user": "coyomii",
   "state_branch": "watch-state"
 }
