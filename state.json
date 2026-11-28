@@ -8,8 +8,8 @@
     "currency": "CNY",
     "price": "20.0",
     "regular": "25.0",
-    "checked_at": "2026-11-27T13:02:17.071944+00:00",
-    "availability_id": "9Z1Q5BQ1TRX6",
+    "checked_at": "2026-11-28T02:42:28.749165+00:00",
+    "availability_id": "9PRSZMPPRX5Q",
     "expires_at": "2026-12-05T10:00:00+00:00"
   },
   "sale_active": false,
@@ -248,6 +248,11 @@
     },
     {
       "checked_at": "2026-11-27T13:02:17.071944+00:00",
+      "price": "20.0",
+      "regular": "25.0"
+    },
+    {
+      "checked_at": "2026-11-28T02:42:28.749165+00:00",
       "price": "20.0",
       "regular": "25.0"
     }
